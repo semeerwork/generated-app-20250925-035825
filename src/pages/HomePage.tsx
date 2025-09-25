@@ -44,13 +44,13 @@ const actions = {
     const cell = board[row][col];
     if (isFirstMove) {
       if (cell.player !== null) return; // Can only place on empty cells
-      const newBoard = JSON.parse(JSON.stringify(board));
+      const newBoard = board.map(r => r.map(c => ({ ...c })));
       newBoard[row][col] = { player: currentPlayer, dots: 3 };
       useGameStore.setState({ board: newBoard, status: 'ANIMATING' });
       setTimeout(() => processTurnEnd(), 100); // Short delay for piece placement animation
     } else {
       if (cell.player !== currentPlayer) return; // Can only click your own cells
-      const newBoard = JSON.parse(JSON.stringify(board));
+      const newBoard = board.map(r => r.map(c => ({ ...c })));
       newBoard[row][col].dots++;
       useGameStore.setState({ board: newBoard, status: 'ANIMATING' });
       handleExplosions(newBoard);
@@ -94,7 +94,7 @@ const processTurnEnd = () => {
 };
 const handleExplosions = async (initialBoard: BoardState) => {
     const explosionDelay = 150;
-    let currentBoard = JSON.parse(JSON.stringify(initialBoard));
+    let currentBoard = initialBoard.map(r => r.map(c => ({ ...c })));
     let explosionsOccurred = true;
     while (explosionsOccurred) {
         explosionsOccurred = false;
@@ -109,7 +109,7 @@ const handleExplosions = async (initialBoard: BoardState) => {
         }
         if (explosionsOccurred) {
             await new Promise(resolve => setTimeout(resolve, explosionDelay));
-            const boardAfterExplosions = JSON.parse(JSON.stringify(currentBoard));
+            const boardAfterExplosions = currentBoard.map(r => r.map(c => ({ ...c })));
             explosionsThisStep.forEach(({ row, col }) => {
                 const explodingPlayer = boardAfterExplosions[row][col].player;
                 boardAfterExplosions[row][col] = { player: null, dots: 0 };
@@ -169,7 +169,7 @@ const calculateAIMove = (board: BoardState, player: Player, isFirstMove: boolean
 };
 const evaluateMove = (board: BoardState, row: number, col: number, player: Player, opponent: Player): number => {
     let score = 0;
-    const tempBoard = JSON.parse(JSON.stringify(board));
+    const tempBoard = board.map(r => r.map(c => ({ ...c })));
     tempBoard[row][col].dots++;
     let captures = 0;
     let chainLength = 0;
@@ -269,7 +269,7 @@ const dotPositions = [
     [], // 0 dots
     [[0, 0]], // 1 dot
     [[-0.25, -0.25], [0.25, 0.25]], // 2 dots
-    [[-0.3, -0.3], [0, 0], [0.3, 0.3]], // 3 dots
+    [[0, -0.3], [-0.3, 0.2], [0.3, 0.2]], // 3 dots
 ];
 const Cell: React.FC<{ row: number; col: number }> = React.memo(({ row, col }) => {
     const { board, currentPlayer, status } = useGameStore();
@@ -323,7 +323,7 @@ const GameOverDialog: React.FC = () => {
     const { winner, status } = useGameStore();
     const isOpen = status === 'GAME_OVER';
     return (
-        <Dialog open={isOpen} onOpenChange={() => {}}>
+        <Dialog open={isOpen} onOpenChange={(open) => !open && actions.resetGame()}>
             <DialogContent className="bg-[#191923] border-player-one text-white font-mono">
                 <DialogHeader>
                     <DialogTitle className="text-3xl text-center text-player-one">
